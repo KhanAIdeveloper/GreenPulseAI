@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GreenPulseAI — Персональный климатический след</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+    body { font-family: 'Montserrat', sans-serif; }
+    input[type=range]::-webkit-slider-thumb { background: red; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+  </style>
+  <style>
+  /* Стили для выпадающего списка топлива */
+  #fuel {
+    background-color: #111827; /* Тёмный фон */
+    color: white;              /* Белый текст */
+    border: 1px solid #374151; /* Тонкая граница */
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 2.5rem;
+  }
+
+  /* Светлая тема */
+  :not(.dark) #fuel {
+    background-color: white;
+    color: black;
+    border: 1px solid #ccc;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  }
+</style>
+
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-colors duration-300 p-6">
+  <div class="max-w-xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg animate-fadeIn">
+    <!-- Theme & Language -->
+    <div class="flex justify-end space-x-2 mb-4">
+      <select id="language" class="p-1 border rounded text-sm bg-gray-100 dark:bg-gray-700">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+        <option value="it">Italiano</option>
+        <option value="zh">简体中文</option>
+
+      </select>
+      <button id="theme-toggle" class="p-1 rounded bg-gray-200 dark:bg-gray-600">🌓</button>
+    </div>
+
+    <!-- Title -->
+    <h1 id="title" class="text-2xl font-bold mb-4 text-center"></h1>
+
+    <!-- Sliders -->
+    <label id="label-electricity" class="block mb-2"></label>
+    <input id="electricity" type="range" min="0" max="500" step="10" value="300" class="w-full mb-4" />
+
+    <label id="label-meat" class="block mb-2"></label>
+    <input id="meat" type="range" min="0" max="1000" step="10" value="200" class="w-full mb-4" />
+
+    <label id="label-plastic" class="block mb-2"></label>
+    <input id="plastic" type="range" min="0" max="40" step="1" value="10" class="w-full mb-4" />
+
+    <label id="label-transport" class="block mb-2"></label>
+    <input id="transport" type="range" min="0" max="8000" step="10" value="100" class="w-full mb-4" />
+
+    <!-- Fuel type -->
+    <label id="label-fuel" class="block mb-2"></label>
+    <select id="fuel" class="w-full mb-4 p-2 border rounded-xl"></select>
+
+    <!-- Calculate button -->
+    <button id="submit-btn" class="w-full py-2 rounded bg-green-600 hover:bg-green-700 dark:bg-green-400 dark:hover:bg-green-500 text-white dark:text-black font-semibold transition-transform duration-200 hover:scale-105 mb-4"></button>
+
+    <!-- Output and recommendation -->
+    <p id="output" class="text-center font-semibold text-lg"></p>
+    <p id="recommendation" class="text-center mt-2 text-base"></p>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const root = document.documentElement;
+    // Theme
+    if (localStorage.getItem('darkMode') === 'true') root.classList.add('dark');
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const dark = root.classList.toggle('dark');
+      localStorage.setItem('darkMode', dark);
+    });
+    // Translations
+    const translations = {
+    
+      ru: {
+        title: "🌿 GreenPulseAI — Персональный климатический след",
+        electricity: "Электроэнергия (кВт/мес):",
+        meat: "Потребление мяса (грамм в день):",
+        plastic: "Пластиковая упаковка (шт в неделю):",
+        transport: "Транспорт (км в неделю):",
+        fuel: "Тип топлива:",
+        button: "Рассчитать",
+        result: "Ваш климатический след:",
+        unit: "кг CO₂ в месяц",
+        recommendations: {
+          low: "Отлично! Ваш след низкий. Продолжайте в том же духе и подумайте о мерах.",
+          moderate: "Умеренный след. Чтобы снизить, уменьшайте мясо и чаще пользуйтесь транспортом.",
+          high: "Высокий след. Сократите поездки на авто и переходите на возобновляемые энергоисточники.",
+          veryHigh: "Очень высокий! Срочно действуйте: вело или электромобиль, минимум мяса и электроэнергии."
+        },
+        fuelOptions: [
+          { value: 'petrol', label: 'Бензин' },
+          { value: 'diesel', label: 'Дизель' },
+          { value: 'electric', label: 'Электро' }
+        ]
+      },
+      en: {
+        title: "🌿 GreenPulseAI — Personal Carbon Footprint",
+        electricity: "Electricity (kWh/month):",
+        meat: "Meat consumption (grams per day):",
+        plastic: "Plastic packages (per week):",
+        transport: "Transport (km per week):",
+        fuel: "Fuel type:",
+        button: "Calculate",
+        result: "Your carbon footprint:",
+        unit: "kg CO₂ per month",
+        recommendations: {
+          low: "Great! Your footprint is low. Keep it up and consider energy-efficient appliances.",
+          moderate: "Moderate footprint. To reduce it, cut down on meat and use public transport more.",
+          high: "High footprint. We recommend reducing car travel, switching to renewables, and using reusable bags.",
+          veryHigh: "Very high! Act now: bike or use an electric vehicle, and minimize meat & electricity usage."
+        },
+        fuelOptions: [
+          { value: 'petrol', label: 'Petrol' },
+          { value: 'diesel', label: 'Diesel' },
+          { value: 'electric', label: 'Electric' }
+        ]
+      },
+      it: {
+        title: "🌿 GreenPulseAI — Impronta di carbonio personale",
+        electricity: "Elettricità (kWh/mese):",
+        meat: "Consumo di carne (grammi al giorno):",
+        plastic: "Imballaggi di plastica (a settimana):",
+        transport: "Trasporto (km a settimana):",
+        fuel: "Tipo di carburante:",
+        button: "Calcola",
+        result: "La tua impronta di carbonio:",
+        unit: "kg CO₂ al mese",
+        recommendations: {
+          low: "Ottimo! Impronta bassa. Continua così e scegli elettrodomestici a basso consumo.",
+          moderate: "Impronta moderata. Per ridurla, limita il consumo di carne e usa i mezzi pubblici più spesso.",
+          high: "Impronta elevata. Riduci i viaggi in auto, passa a fonti rinnovabili e usa borse riutilizzabili.",
+          veryHigh: "Impronta molto alta! Agisci subito: usa bici o veicolo elettrico e minimizza carne ed energia."
+        },
+        fuelOptions: [
+          { value: 'petrol', label: 'Benzina' },
+          { value: 'diesel', label: 'Diesel' },
+          { value: 'electric', label: 'Elettrico' }
+        ]
+      },zh: {
+  title: "🌿 GreenPulseAI — 个人碳足迹",
+  electricity: "电力消耗 (千瓦时/月):",
+  meat: "肉类消耗 (克/天):",
+  plastic: "塑料包装 (每周):",
+  transport: "交通 (公里/每周):",
+  fuel: "燃料类型:",
+  button: "计算",
+  result: "您的碳足迹:",
+  unit: "公斤二氧化碳/月",
+  recommendations: {
+    low: "很好！您的碳足迹很低。请继续保持，并考虑使用节能设备。",
+    moderate: "碳足迹中等。要减少它，请少吃肉类，多使用公共交通。",
+    high: "碳足迹较高。建议减少开车，使用可再生能源和可重复使用的包装。",
+    veryHigh: "碳足迹非常高！请立即采取行动：骑自行车或使用电动车，减少肉类和电力消耗。"
+  },
+  fuelOptions: [
+    { value: 'petrol', label: '汽油' },
+    { value: 'diesel', label: '柴油' },
+    { value: 'electric', label: '电动' }
+  ]
+}
+
+    };
+    // UI Refresh
+    let currentLang = localStorage.getItem('preferredLang') || 'ru';
+    const langSel = document.getElementById('language'); langSel.value = currentLang;
+    function refreshUI() {
+      const t = translations[currentLang];
+      document.getElementById('title').textContent = t.title;
+      ['electricity','meat','plastic','transport'].forEach(id => {
+        const val = document.getElementById(id).value;
+        document.getElementById('label-'+id).textContent = t[id] + ' ' + val;
+      });
+      document.getElementById('label-fuel').textContent = t.fuel;
+      const fuelSel = document.getElementById('fuel'); fuelSel.innerHTML = '';
+      t.fuelOptions.forEach(o => fuelSel.add(new Option(o.label,o.value)));
+      document.getElementById('submit-btn').textContent = t.button;
+      localStorage.setItem('preferredLang', currentLang);
+    }
+    langSel.addEventListener('change', () => { currentLang = langSel.value; refreshUI(); });
+    // Sliders
+    ['electricity','meat','plastic','transport'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        const t = translations[currentLang];
+        document.getElementById('label-'+id).textContent = t[id] + ' ' + document.getElementById(id).value;
+      });
+    });
+    // Calculate
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+      const t = translations[currentLang];
+      const data = {
+  electricity:   +document.getElementById('electricity').value,
+  meat:          +document.getElementById('meat').value,
+  plastic:       +document.getElementById('plastic').value,
+  transport_km:  +document.getElementById('transport').value,
+  fuel_type:      document.getElementById('fuel').value,
+  language:       document.getElementById('language').value 
+      };
+      const res = await fetch('http://localhost:8000/calculate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+      const json = await res.json();
+      document.getElementById('output').textContent = `${t.result} ${json.index} ${t.unit}`;
+      const idx=json.index, r=t.recommendations;
+      const rec= idx<500? r.low: idx<1000? r.moderate: idx<2000? r.high: r.veryHigh;
+      document.getElementById('recommendation').textContent = rec;
+    });
+    // Init
+    refreshUI();
+  });
+  </script>
+</body>
+</html>
