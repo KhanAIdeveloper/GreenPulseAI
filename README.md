@@ -3,7 +3,7 @@ The system combines environmental analytics and artificial intelligence to make 
 
 🚀The main idea:
 Environmental awareness, machine learning, and an adaptive interface with localization in four languages: Chinese, English, Russian, and Italian.
-The user enters their data—energy consumption, transportation, meat consumption, plastic use, and fuel type.
+The user enters their data-energy consumption, transportation, meat consumption, plastic use, and fuel type.
 The AI ​​model calculates a carbon footprint index and provides personalized environmental advice.
 
 🧩Technologies used:
